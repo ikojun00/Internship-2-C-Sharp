@@ -14,11 +14,84 @@ transactions.Add(5, new Tuple<int, string, int, string, DateTime>(3, "prihod", 1
 transactions.Add(6, new Tuple<int, string, int, string, DateTime>(3, "rashod", 10, "prijevoz", DateTime.Now));
 transactions.Add(7, new Tuple<int, string, int, string, DateTime>(4, "prihod", 50, "honorar", DateTime.Now));
 transactions.Add(8, new Tuple<int, string, int, string, DateTime>(4, "rashod", 100, "hrana", DateTime.Now));
-//accounts
+
+//components
+int Display(string[] options)
+{
+    int option;
+    do
+    {
+        for (int i = 0; i < options.Length; i++)
+        {
+            Console.WriteLine($"{i} - {options[i]}");
+        }
+
+        Console.Write("\nTvoj izbor: ");
+
+        if (!int.TryParse(Console.ReadLine(), out option) || option < 0 || option >= options.Length)
+        {
+            Console.WriteLine("\nUnos nije validan. Molimo pokušajte ponovo.\n");
+            continue;
+        }
+        break;
+    } while (true);
+
+    Console.Clear();
+
+    return option;
+}
+
+
+//functions
+
+void AddTransaction() { }
+void DeleteTransaction() { }
+void UpdateTransaction() { }
+void TransactionList(int optionForId) 
+{
+    Console.WriteLine("Tip - Iznos - Kategorija - Datum");
+
+    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    foreach (var transaction in userTransactions)
+    {
+        string type = transaction.Value.Item2;
+        int price = transaction.Value.Item3;
+        string category = transaction.Value.Item4;
+        DateTime transactionDate = transaction.Value.Item5;
+
+        Console.WriteLine($"{type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
+    }
+}
+void FinancialReport() { }
 
 void Accounts(int optionForId)
 {
-    //TODO
+    string[] options = { "Povratak u glavni izbornik\n", "Unos nove transakcije", "Brisanje transakcije", "Uređivanje transakcije", "Pregled transakcija", "Financijsko izvješće" };
+    int option = Display(options);
+
+    switch (option)
+    {
+        case 0:
+            MainMenu();
+            break;
+        case 1:
+            AddTransaction();
+            break;
+        case 2:
+            DeleteTransaction();
+            break;
+        case 3:
+            UpdateTransaction();
+            break;
+        case 4:
+            TransactionList(optionForId);
+            MainMenu();
+            break;
+        case 5:
+            FinancialReport();
+            MainMenu();
+            break;
+    }
 }
 
 void UserList()
@@ -44,7 +117,7 @@ void UpdateUser()
     int option;
     do
     {
-        Console.Write("Upiši id korisnika kojeg želiš izmijeniti: ");
+        Console.Write("\nUpiši id korisnika kojeg želiš izmijeniti: ");
         int.TryParse(Console.ReadLine(), out option);
 
         if (!users.ContainsKey(option))
@@ -85,7 +158,7 @@ void DeleteUserById()
     int option;
     do
     {
-        Console.Write("Upiši id korisnika kojeg želiš izbrisati: ");
+        Console.Write("\nUpiši id korisnika kojeg želiš izbrisati: ");
         int.TryParse(Console.ReadLine(), out option);
 
         if (!users.ContainsKey(option))
@@ -109,24 +182,8 @@ void DeleteUserByFirstnameAndLastname()
 
 void DeleteUser()
 {
-    int option;
-    do
-    {
-        Console.WriteLine("1 - Brisanje po id-u");
-        Console.WriteLine("2 - Brisanje po imenu i prezimenu");
-        Console.WriteLine("\n0 - Povratak u glavni izbornik\n");
-        Console.Write("Tvoj izbor: ");
-
-        if (!int.TryParse(Console.ReadLine(), out option) || (option < 0 || option > 2))
-        {
-            Console.WriteLine("\nUnos nije validan. Molimo pokušajte ponovo.\n");
-            continue;
-        }
-        break;
-
-    } while (true);
-
-    Console.Clear();
+    string[] options = { "Povratak u glavni izbornik\n", "Brisanje po id-u", "Brisanje po imenu i prezimenu" };
+    int option = Display(options);
 
     switch (option)
     {
@@ -170,26 +227,8 @@ void AddUser()
 }
 void Users()
 {
-    int option;
-    do
-    {
-        Console.WriteLine("1 - Unos novog korisnika");
-        Console.WriteLine("2 - Brisanje korisnika");
-        Console.WriteLine("3 - Uređivanje korisnika");
-        Console.WriteLine("4 - Pregled izbornika");
-        Console.WriteLine("\n0 - Povratak u glavni izbornik\n");
-        Console.Write("Tvoj izbor: ");
-
-        if (!int.TryParse(Console.ReadLine(), out option) || (option < 0 || option > 4))
-        {
-            Console.WriteLine("\nUnos nije validan. Molimo pokušajte ponovo.\n");
-            continue;
-        }
-        break;
-
-    } while (true);
-
-    Console.Clear();
+    string[] options = { "Povratak u glavni izbornik\n", "Unos novog korisnika", "Brisanje korisnika", "Uređivanje korisnika", "Pregled izbornika" };
+    int option = Display(options);
 
     switch (option)
     {
@@ -213,27 +252,14 @@ void Users()
 }
 void MainMenu()
 {
-    int option;
-    do
-    {
-        Console.WriteLine("1 - Korisnici");
-        Console.WriteLine("2 - Računi");
-        Console.WriteLine("3 - Izlaz iz aplikacije");
-        Console.Write("Tvoj izbor: ");
-
-        if (!int.TryParse(Console.ReadLine(), out option) || (option < 1 || option > 3))
-        {
-            Console.WriteLine("\nUnos nije validan. Molimo pokušajte ponovo.\n");
-            continue;
-        }
-        break;
-
-    } while (true);
-
-    Console.Clear();
+    string[] options = { "Izlaz iz aplikacije\n", "Korisnici", "Računi" };
+    int option = Display(options);
 
     switch (option)
     {
+        case 0:
+            Console.WriteLine("Odjava.");
+            break;
         case 1:
             Users();
             break;
@@ -242,7 +268,7 @@ void MainMenu()
             int optionForId;
             do
             {
-                Console.Write("Upiši id korisnika čijem računu pristupaš: ");
+                Console.Write("\nUpiši id korisnika čijem računu pristupaš: ");
                 int.TryParse(Console.ReadLine(), out optionForId);
 
                 if (!users.ContainsKey(optionForId))
@@ -255,9 +281,6 @@ void MainMenu()
             } while (true);
             Console.Clear();
             Accounts(optionForId);
-            break;
-        case 3:
-            Console.WriteLine("Odjava.");
             break;
     }
 }
