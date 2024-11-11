@@ -1,4 +1,6 @@
-﻿SortedDictionary<int, Tuple<string, string, int, DateTime>> users = new SortedDictionary<int, Tuple<string, string, int, DateTime>>();
+﻿using System.Xml.Linq;
+
+SortedDictionary<int, Tuple<string, string, int, DateTime>> users = new SortedDictionary<int, Tuple<string, string, int, DateTime>>();
 users.Add(1, new Tuple<string, string, int, DateTime>("Ante", "Antic", 800, new DateTime(2001, 5, 21)));
 users.Add(2, new Tuple<string, string, int, DateTime>("Mate", "Matic", -200, new DateTime(2003, 2, 1)));
 users.Add(3, new Tuple<string, string, int, DateTime>("Jure", "Juric", 190, new DateTime(1998, 12, 21)));
@@ -41,12 +43,162 @@ int Display(string[] options)
     return option;
 }
 
+(string, int, string) TransactionBody()
+{
+    string typeNum;
+    int amount;
+    string category;
+
+    while (true)
+    {
+        Console.Write("Pritisni 1 za prihod ili 2 za rashod: ");
+        typeNum = Console.ReadLine();
+        if (typeNum == "1" || typeNum == "2") break;
+        Console.WriteLine("Niste pritisnuli 1 za prihod ili 2 za rashod. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Iznos: ");
+        var amountInput = Console.ReadLine();
+        if (int.TryParse(amountInput, out amount) && amount > 0) break;
+        Console.WriteLine("Iznos mora biti pozitivan broj. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Kategorija: ");
+        category = Console.ReadLine();
+        if (typeNum == "1" && (category == "plaća" || category == "honorar" || category == "poklon") ||
+            typeNum == "2" && (category == "hrana" || category == "prijevoz" || category == "sport")) break;
+        Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
+    }
+
+    return (typeNum, amount, category);
+}
+
+(string, string, DateTime) UserBody()
+{
+    string name;
+    string surname;
+    int day;
+    int month;
+    int year;
+    DateTime birthDate;
+
+    while (true)
+    {
+        Console.Write("Ime: ");
+        name = Console.ReadLine();
+        if (name != "") break;
+        Console.WriteLine("Ime ne može biti prazno. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Prezime: ");
+        surname = Console.ReadLine();
+        if (surname != "") break;
+        Console.WriteLine("Prezime ne može biti prazno. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Dan: ");
+        if (!int.TryParse(Console.ReadLine(), out day) || day < 1 || day > 31)
+        {
+            Console.WriteLine("Dan mora biti broj između 1 i 31. Pokušajte ponovo.");
+            continue;
+        }
+
+        Console.Write("Mjesec: ");
+        if (!int.TryParse(Console.ReadLine(), out month) || month < 1 || month > 12)
+        {
+            Console.WriteLine("Mjesec mora biti broj između 1 i 12. Pokušajte ponovo.");
+            continue;
+        }
+
+        Console.Write("Godina: ");
+        if (!int.TryParse(Console.ReadLine(), out year) || year < 1900 || year > DateTime.Now.Year)
+        {
+            Console.WriteLine($"Godina mora biti između 1900 i {DateTime.Now.Year}. Pokušajte ponovo.");
+            continue;
+        }
+
+        try
+        {
+            birthDate = new DateTime(year, month, day);
+            break;
+        }
+        catch
+        {
+            Console.WriteLine("Nevažeći datum. Pokušajte ponovo.");
+        }
+    }
+
+    return (name, surname, birthDate);
+}
 
 //functions
+void AddTransaction(int optionForId) 
+{
+    var (typeNum, amount, category) = TransactionBody();
+    int newId = transactions.Keys.Count != 0 ? transactions.Keys.Max() + 1 : 1;
+    transactions.Add(newId, new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now));
+    Accounts(optionForId);
+}
+void DeleteTransactionById(int optionForId) { }
+void DeleteTransactionsUnderCertainAmount(int optionForId) { }
+void DeleteTransactionsAboveCertainAmount(int optionForId) { }
+void DeleteIncomeTransactions(int optionForId) { }
+void DeleteTransactionsOfSelectedCategory(int optionForId) { }
 
-void AddTransaction() { }
-void DeleteTransaction() { }
-void UpdateTransaction() { }
+void DeleteTransaction(int optionForId) {
+    string[] options = { "Povratak\n", "Brisanje transakcije po id-u", "Brisanje ispod unesenog iznosa", "Brisanje iznad unesenog iznosa", "Brisanje svih prihoda", "Brisanje svih rashoda", "Brisanje svih transakcija za odabranu kategoriju" };
+    int option = Display(options);
+
+    switch (option)
+    {
+        case 0:
+            Accounts(optionForId);
+            break;
+        case 1:
+            DeleteTransactionById(optionForId);
+            break;
+        case 2:
+            DeleteTransactionsUnderCertainAmount(optionForId);
+            break;
+        case 3:
+            DeleteTransactionsAboveCertainAmount(optionForId);
+            break;
+        case 4:
+            DeleteIncomeTransactions(optionForId);
+            break;
+        case 5:
+            DeleteTransactionsOfSelectedCategory(optionForId);
+            break;
+    }
+}
+void UpdateTransaction(int optionForId) {
+    TransactionList(optionForId);
+    int option;
+
+    while (true)
+    {
+        Console.Write("\nUpiši id transakcije koje želiš izmijeniti: ");
+        int.TryParse(Console.ReadLine(), out option);
+
+        if (transactions.ContainsKey(option)) break;
+        else Console.WriteLine("\nTransakcija s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
+    }
+
+    var (typeNum, amount, category) = TransactionBody();
+    var date = transactions[option].Item5;
+    transactions[option] = new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, date);
+    Console.WriteLine($"\nTransakcija s ID-om {option} izmijenjena.\n");
+        
+    Accounts(optionForId);
+}
 void TransactionList(int optionForId) 
 {
     Console.WriteLine("Tip - Iznos - Kategorija - Datum");
@@ -75,13 +227,13 @@ void Accounts(int optionForId)
             MainMenu();
             break;
         case 1:
-            AddTransaction();
+            AddTransaction(optionForId);
             break;
         case 2:
-            DeleteTransaction();
+            DeleteTransaction(optionForId);
             break;
         case 3:
-            UpdateTransaction();
+            UpdateTransaction(optionForId);
             break;
         case 4:
             TransactionList(optionForId);
@@ -115,40 +267,19 @@ void UpdateUser()
 {
     UserList();
     int option;
-    do
+    while (true)
     {
         Console.Write("\nUpiši id korisnika kojeg želiš izmijeniti: ");
         int.TryParse(Console.ReadLine(), out option);
 
-        if (!users.ContainsKey(option))
-        {
-            Console.WriteLine("\nKorisnik s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
-            continue;
-        }
-        Console.Write("Ime: ");
-        var name = Console.ReadLine();
-        Console.Write("Prezime: ");
-        var surname = Console.ReadLine();
-        while (true)
-        {
-            Console.WriteLine("Datum rođenja");
-            Console.Write("Dan: ");
-            if (!int.TryParse(Console.ReadLine(), out int day) || day < 1 || day > 31) continue;
+        if (users.ContainsKey(option)) break;
+        else Console.WriteLine("\nKorisnik s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
+    }
 
-            Console.Write("Mjesec: ");
-            if (!int.TryParse(Console.ReadLine(), out int month) || month < 1 || month > 12) continue;
-
-            Console.Write("Godina: ");
-            if (!int.TryParse(Console.ReadLine(), out int year) || year < 1900 || year > DateTime.Now.Year) continue;
-
-            var account = users[option].Item3;
-
-            users[option] = new Tuple<string, string, int, DateTime>(name, surname, account, new DateTime(year, month, day));
-            break;
-        }
-        Console.WriteLine($"\nKorisnik s ID-om {option} izmijenjen.\n");
-        break;
-    } while (true);
+    var (name, surname, birthDate) = UserBody();
+    var account = users[option].Item3;
+    users[option] = new Tuple<string, string, int, DateTime>(name, surname, account, birthDate);
+    Console.WriteLine($"\nKorisnik s ID-om {option} izmijenjen.\n");
     MainMenu();
 }
 
@@ -200,29 +331,10 @@ void DeleteUser()
 }
 void AddUser()
 {
-    Console.Write("Ime: ");
-    var name = Console.ReadLine();
-    Console.Write("Prezime: ");
-    var surname = Console.ReadLine();
-    while (true)
-    {
-        Console.WriteLine("Datum rođenja");
-        Console.Write("Dan: ");
-        if (!int.TryParse(Console.ReadLine(), out int day) || day < 1 || day > 31) continue;
-
-        Console.Write("Mjesec: ");
-        if (!int.TryParse(Console.ReadLine(), out int month) || month < 1 || month > 12) continue;
-
-        Console.Write("Godina: ");
-        if (!int.TryParse(Console.ReadLine(), out int year) || year < 1900 || year > DateTime.Now.Year) continue;
-
-        int newId = users.Keys.Count != 0 ? users.Keys.Max() + 1 : 1;
-
-        users.Add(newId, new Tuple<string, string, int, DateTime>(name, surname, 100, new DateTime(year, month, day)));
-
-        Console.WriteLine($"\nKorisnik {name} {surname} dodan s id-om {newId}.\n");
-        break;
-    }
+    var (name, surname, birthDate) = UserBody();
+    int newId = users.Keys.Count != 0 ? users.Keys.Max() + 1 : 1;
+    users.Add(newId, new Tuple<string, string, int, DateTime>(name, surname, 100, birthDate));
+    Console.WriteLine($"\nKorisnik {name} {surname} dodan s id-om {newId}.\n");
     MainMenu();
 }
 void Users()
