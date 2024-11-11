@@ -45,9 +45,9 @@ int Display(string[] options)
 
 (string, int, string) TransactionBody()
 {
-    string typeNum;
+    var typeNum = "";
     int amount;
-    string category;
+    var category = "";
 
     while (true)
     {
@@ -79,8 +79,8 @@ int Display(string[] options)
 
 (string, string, DateTime) UserBody()
 {
-    string name;
-    string surname;
+    var name = "";
+    var surname = "";
     int day;
     int month;
     int year;
@@ -139,12 +139,38 @@ int Display(string[] options)
     return (name, surname, birthDate);
 }
 
+void AccountValue(int optionForId)
+{
+    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId);
+    int balance = 100;
+    foreach (var transaction in userTransactions)
+    {
+        string type = transaction.Value.Item2;
+        int amount = transaction.Value.Item3;
+        Console.WriteLine(amount);
+
+        if (type == "prihod")
+            balance += amount;
+        else if (type == "rashod")
+            balance -= amount;
+    }
+
+    users[optionForId] = new Tuple<string, string, int, DateTime>(
+        users[optionForId].Item1,
+        users[optionForId].Item2,
+        balance,
+        users[optionForId].Item4
+    );
+    Console.WriteLine(balance);
+}
+
 //functions
 void AddTransaction(int optionForId) 
 {
     var (typeNum, amount, category) = TransactionBody();
     int newId = transactions.Keys.Count != 0 ? transactions.Keys.Max() + 1 : 1;
     transactions.Add(newId, new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now));
+    AccountValue(optionForId);
     Accounts(optionForId);
 }
 void DeleteTransactionById(int optionForId) { }
@@ -180,7 +206,7 @@ void DeleteTransaction(int optionForId) {
     }
 }
 void UpdateTransaction(int optionForId) {
-    TransactionList(optionForId);
+    var userKeys = TransactionList(optionForId);
     int option;
 
     while (true)
@@ -188,31 +214,37 @@ void UpdateTransaction(int optionForId) {
         Console.Write("\nUpiši id transakcije koje želiš izmijeniti: ");
         int.TryParse(Console.ReadLine(), out option);
 
-        if (transactions.ContainsKey(option)) break;
+        if (userKeys.Contains(option)) break;
         else Console.WriteLine("\nTransakcija s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
     }
 
     var (typeNum, amount, category) = TransactionBody();
-    var date = transactions[option].Item5;
-    transactions[option] = new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, date);
+    transactions[option] = new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now);
     Console.WriteLine($"\nTransakcija s ID-om {option} izmijenjena.\n");
-        
+    
+    AccountValue(optionForId);
     Accounts(optionForId);
 }
-void TransactionList(int optionForId) 
+int[] TransactionList(int optionForId) 
 {
-    Console.WriteLine("Tip - Iznos - Kategorija - Datum");
+    Console.WriteLine("Id - Tip - Iznos - Kategorija - Datum");
 
     var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    int[] keys = new int[userTransactions.Count];
+    int count = 0;
+
     foreach (var transaction in userTransactions)
     {
+        keys[count] = transaction.Key;
+        count++;
         string type = transaction.Value.Item2;
         int price = transaction.Value.Item3;
         string category = transaction.Value.Item4;
         DateTime transactionDate = transaction.Value.Item5;
 
-        Console.WriteLine($"{type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
+        Console.WriteLine($"{transaction.Key} - {type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
     }
+    return keys;
 }
 void FinancialReport() { }
 
@@ -307,7 +339,23 @@ void DeleteUserById()
 void DeleteUserByFirstnameAndLastname()
 {
     UserList();
-    // TO DO
+    Console.Write("Unesi ime korisnika kojeg želiš izbrisati: ");
+    var name = Console.ReadLine();
+    Console.Write("Unesi prezime korisnika kojeg želiš izbrisati: ");
+    var surname = Console.ReadLine();
+
+    var usersToDelete = users.Where(u => u.Value.Item1 == name && u.Value.Item2 == surname).ToList();
+
+    if (usersToDelete.Count == 0) Console.WriteLine("Korisnik s tim imenom i prezimenom nije pronađen.");
+    else
+    {
+        foreach (var user in usersToDelete)
+        {
+            users.Remove(user.Key);
+            Console.WriteLine($"Korisnik {user.Value.Item1} {user.Value.Item2} s ID-om {user.Key} izbrisan.");
+        }
+    }
+
     MainMenu();
 }
 
