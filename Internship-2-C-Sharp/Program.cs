@@ -2,7 +2,7 @@
 
 SortedDictionary<int, Tuple<string, string, int, DateTime>> users = new SortedDictionary<int, Tuple<string, string, int, DateTime>>();
 users.Add(1, new Tuple<string, string, int, DateTime>("Ante", "Antic", 800, new DateTime(2001, 5, 21)));
-users.Add(2, new Tuple<string, string, int, DateTime>("Mate", "Matic", -200, new DateTime(2003, 2, 1)));
+users.Add(2, new Tuple<string, string, int, DateTime>("Mate", "Matic", -200, new DateTime(1980, 2, 1)));
 users.Add(3, new Tuple<string, string, int, DateTime>("Jure", "Juric", 190, new DateTime(1998, 12, 21)));
 users.Add(4, new Tuple<string, string, int, DateTime>("Ivo", "Ivic", 50, new DateTime(2000, 7, 6)));
 
@@ -42,7 +42,23 @@ int Display(string[] options)
 
     return option;
 }
+void UserListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<string, string, int, DateTime>>> userList, string message)
+{
+    if (userList.Any())
+    {
+        Console.WriteLine("Id - Ime - Prezime - Datum rođenja");
+        foreach (var user in userList)
+        {
+            int id = user.Key;
+            string name = user.Value.Item1;
+            string surname = user.Value.Item2;
+            DateTime birthDate = user.Value.Item4;
 
+            Console.WriteLine($"{id} - {name} - {surname} - {birthDate.ToString("dd.MM.yyyy")}");
+        }
+    }
+    else Console.WriteLine(message);
+}
 (string, int, string) TransactionBody()
 {
     var typeNum = "";
@@ -278,26 +294,49 @@ void Accounts(int optionForId)
     }
 }
 
+void UserListBySurname()
+{
+    var sortedUsers = users.OrderBy(user => user.Value.Item2).ToList();
+    UserListDisplayBody(sortedUsers, "Nema korisnika.");
+}
+
+void UserListByAge()
+{
+    var usersOver30 = users.Where(user => (DateTime.Now.Year - user.Value.Item4.Year) > 30);
+    UserListDisplayBody(usersOver30, "Nema korisnika starijih od 30.");
+}
+
+void UserListWithNegativeAccount()
+{
+    var usersWithNegativeAccount = users.Where(user => user.Value.Item3 < 0);
+    UserListDisplayBody(usersWithNegativeAccount, "Nema korisnika sa negativnim računom.");
+}
+
 void UserList()
 {
-    Console.WriteLine("Id - Ime - Prezime - Datum rođenja");
+    string[] options = { "Povratak u glavni izbornik\n", "Svi korisnici abecedno po prezimenu", "Svi korisnici koji imaju više od 30 godina", "Svi korisnici koji imaju račun u minusu" };
+    int option = Display(options);
 
-    var sortedUsers = users.OrderBy(user => user.Value.Item2).ToList();
-
-    foreach (var user in sortedUsers)
+    switch (option)
     {
-        int id = user.Key;
-        string name = user.Value.Item1;
-        string surname = user.Value.Item2;
-        DateTime birthDate = user.Value.Item4;
-
-        Console.WriteLine($"{id} - {name} - {surname} - {birthDate.ToString("dd.MM.yyyy")}");
+        case 0:
+            Users();
+            break;
+        case 1:
+            UserListBySurname();
+            break;
+        case 2:
+            UserListByAge();
+            break;
+        case 3:
+            UserListWithNegativeAccount();
+            break;
     }
 }
 
 void UpdateUser()
 {
-    UserList();
+    UserListBySurname();
     int option;
     while (true)
     {
@@ -317,7 +356,7 @@ void UpdateUser()
 
 void DeleteUserById()
 {
-    UserList();
+    UserListBySurname();
     int option;
     do
     {
@@ -338,7 +377,7 @@ void DeleteUserById()
 
 void DeleteUserByFirstnameAndLastname()
 {
-    UserList();
+    UserListBySurname();
     Console.Write("Unesi ime korisnika kojeg želiš izbrisati: ");
     var name = Console.ReadLine();
     Console.Write("Unesi prezime korisnika kojeg želiš izbrisati: ");
@@ -424,7 +463,7 @@ void MainMenu()
             Users();
             break;
         case 2:
-            UserList();
+            UserListBySurname();
             int optionForId;
             do
             {
