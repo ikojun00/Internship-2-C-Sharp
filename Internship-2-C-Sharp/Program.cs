@@ -1,4 +1,6 @@
-﻿using System.Xml.Linq;
+﻿using System.Data.Common;
+using System.Transactions;
+using System.Xml.Linq;
 
 SortedDictionary<int, Tuple<string, string, int, DateTime>> users = new SortedDictionary<int, Tuple<string, string, int, DateTime>>();
 users.Add(1, new Tuple<string, string, int, DateTime>("Ante", "Antic", 800, new DateTime(2001, 5, 21)));
@@ -55,6 +57,23 @@ void UserListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<string, string, int
             DateTime birthDate = user.Value.Item4;
 
             Console.WriteLine($"{id} - {name} - {surname} - {birthDate.ToString("dd.MM.yyyy")}");
+        }
+    }
+    else Console.WriteLine(message);
+}
+void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, string, int, string, DateTime>>> transactionList, string message)
+{
+    if (transactionList.Any())
+    {
+        Console.WriteLine("Id - Tip - Iznos - Kategorija - Datum");
+        foreach (var transaction in transactionList)
+        {
+            string type = transaction.Value.Item2;
+            int price = transaction.Value.Item3;
+            string category = transaction.Value.Item4;
+            DateTime transactionDate = transaction.Value.Item5;
+
+            Console.WriteLine($"{transaction.Key} - {type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
         }
     }
     else Console.WriteLine(message);
@@ -162,7 +181,6 @@ void AccountValue(int optionForId)
     {
         string type = transaction.Value.Item2;
         int amount = transaction.Value.Item3;
-        Console.WriteLine(amount);
 
         if (type == "prihod")
             balance += amount;
@@ -194,7 +212,11 @@ void AddTransaction(int optionForId)
 }
 void DeleteTransactionById(int optionForId) 
 {
-    var userKeys = TransactionList(optionForId);
+    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    TransactionListDisplayBody(userTransactions, "Nema transakcija.");
+    var userKeys = transactions.Where(transaction => transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
     int option;
 
     while (true)
@@ -306,7 +328,11 @@ void DeleteTransaction(int optionForId) {
     }
 }
 void UpdateTransaction(int optionForId) {
-    var userKeys = TransactionList(optionForId);
+    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    TransactionListDisplayBody(userTransactions, "Nema transakcija.");
+    var userKeys = transactions.Where(transaction => transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
     int option;
 
     while (true)
@@ -325,26 +351,92 @@ void UpdateTransaction(int optionForId) {
     AccountValue(optionForId);
     Accounts(optionForId);
 }
-int[] TransactionList(int optionForId) 
-{
-    Console.WriteLine("Id - Tip - Iznos - Kategorija - Datum");
-
-    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
-    int[] keys = new int[userTransactions.Count];
-    int count = 0;
-
-    foreach (var transaction in userTransactions)
+void TransactionListAscendingAmount(int optionForId) {
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderBy(transaction => transaction.Value.Item3).ToList();
+    TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionListDescendingAmount(int optionForId) {
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderByDescending(transaction => transaction.Value.Item3).ToList();
+    TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionListAscendingDate(int optionForId) {
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderBy(transaction => transaction.Value.Item5).ToList();
+    TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionListDescendingDate(int optionForId) {
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderByDescending(transaction => transaction.Value.Item5).ToList();
+    TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionListIncome(int optionForId) {
+    var foundTransactions = transactions.Where(x => x.Value.Item1 == optionForId && x.Value.Item2 == "prihod").ToList();
+    TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionListExpense(int optionForId) {
+    var foundTransactions = transactions.Where(x => x.Value.Item1 == optionForId && x.Value.Item2 == "rashod").ToList();
+    TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionListByCategory(int optionForId) {
+    var category = "";
+    while (true)
     {
-        keys[count] = transaction.Key;
-        count++;
-        string type = transaction.Value.Item2;
-        int price = transaction.Value.Item3;
-        string category = transaction.Value.Item4;
-        DateTime transactionDate = transaction.Value.Item5;
-
-        Console.WriteLine($"{transaction.Key} - {type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
+        Console.Write("Kategorija: ");
+        category = Console.ReadLine();
+        if (category == "plaća" || category == "honorar" || category == "poklon" ||
+            category == "hrana" || category == "prijevoz" || category == "sport") break;
+        Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
     }
-    return keys;
+    var foundTransactions = transactions.Where(x => x.Value.Item1 == optionForId && x.Value.Item4 == category).ToList();
+    TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+
+void TransactionListRegular(int optionForId) 
+{
+    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    TransactionListDisplayBody(userTransactions, "Nema transakcija.");
+    TransactionList(optionForId);
+}
+void TransactionList(int optionForId) 
+{
+    string[] options = { "Povratak u glavni izbornik\n", "Sve transakcije", "Sve transakcije sortirane po iznosu uzlazno", "Sve transakcije sortirane po iznosu silazno", "Sve transakcije sortirane po datumu uzlazno", "Sve transakcije sortirane po datumu silazno", "Svi prihodi", "Svi rashodi", "Sve transakcije za odabranu kategoriju" };
+    int option = Display(options);
+
+    switch (option)
+    {
+        case 0:
+            Accounts(optionForId);
+            break;
+        case 1:
+            TransactionListRegular(optionForId);
+            break;
+        case 2:
+            TransactionListAscendingAmount(optionForId);
+            break;
+        case 3:
+            TransactionListDescendingAmount(optionForId);
+            break;
+        case 4:
+            TransactionListAscendingDate(optionForId);
+            break;
+        case 5:
+            TransactionListDescendingDate(optionForId);
+            break;
+        case 6:
+            TransactionListIncome(optionForId);
+            break;
+        case 7:
+            TransactionListExpense(optionForId);
+            break;
+        case 8:
+            TransactionListByCategory(optionForId);
+            break;
+    }
 }
 void FinancialReport() { }
 
@@ -369,7 +461,6 @@ void Accounts(int optionForId)
             break;
         case 4:
             TransactionList(optionForId);
-            Accounts(optionForId);
             break;
         case 5:
             FinancialReport();
