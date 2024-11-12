@@ -154,7 +154,6 @@ void UserListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<string, string, int
 
     return (name, surname, birthDate);
 }
-
 void AccountValue(int optionForId)
 {
     var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId);
@@ -177,9 +176,13 @@ void AccountValue(int optionForId)
         balance,
         users[optionForId].Item4
     );
-    Console.WriteLine(balance);
 }
-
+void RemoveTransactions(List<int> keysToRemove, int optionForId)
+{
+    foreach (var key in keysToRemove) transactions.Remove(key);
+    Console.WriteLine($"Izbrisano {keysToRemove.Count} transakcija.");
+    Accounts(optionForId);
+}
 //functions
 void AddTransaction(int optionForId) 
 {
@@ -189,11 +192,89 @@ void AddTransaction(int optionForId)
     AccountValue(optionForId);
     Accounts(optionForId);
 }
-void DeleteTransactionById(int optionForId) { }
-void DeleteTransactionsUnderCertainAmount(int optionForId) { }
-void DeleteTransactionsAboveCertainAmount(int optionForId) { }
-void DeleteIncomeTransactions(int optionForId) { }
-void DeleteTransactionsOfSelectedCategory(int optionForId) { }
+void DeleteTransactionById(int optionForId) 
+{
+    var userKeys = TransactionList(optionForId);
+    int option;
+
+    while (true)
+    {
+        Console.Write("\nUpiši id transakcije koje želiš izmijeniti: ");
+        int.TryParse(Console.ReadLine(), out option);
+
+        if (userKeys.Contains(option)) break;
+        else Console.WriteLine("\nTransakcija s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
+    }
+    transactions.Remove(option);
+    Console.WriteLine($"Izbrisana transakcije s id-om {option}.");
+    Accounts(optionForId);
+}
+void DeleteTransactionsUnderCertainAmount(int optionForId) 
+{
+    int amount;
+    while (true)
+    {
+        Console.Write("Iznos: ");
+        if (int.TryParse(Console.ReadLine(), out amount)) break;
+        Console.WriteLine("Iznos mora biti broj. Pokušajte ponovo.");
+    }
+    var keysToRemove = transactions
+        .Where(transaction => transaction.Value.Item3 < amount && transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
+
+    RemoveTransactions(keysToRemove, optionForId);
+}
+void DeleteTransactionsAboveCertainAmount(int optionForId) 
+{
+    int amount;
+    while (true)
+    {
+        Console.Write("Iznos: ");
+        if (int.TryParse(Console.ReadLine(), out amount)) break;
+        Console.WriteLine("Iznos mora biti broj. Pokušajte ponovo.");
+    }
+    var keysToRemove = transactions
+        .Where(transaction => transaction.Value.Item3 > amount && transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
+
+    RemoveTransactions(keysToRemove, optionForId);
+}
+void DeleteIncomeTransactions(int optionForId) {
+    var keysToRemove = transactions
+        .Where(transaction => transaction.Value.Item2 == "prihod" && transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
+
+    RemoveTransactions(keysToRemove, optionForId);
+}
+void DeleteExpenseTransactions(int optionForId)
+{
+    var keysToRemove = transactions
+        .Where(transaction => transaction.Value.Item2 == "rashod" && transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
+
+    RemoveTransactions(keysToRemove, optionForId);
+}
+void DeleteTransactionsOfSelectedCategory(int optionForId) 
+{
+    var category = "";
+    while (true)
+    {
+        Console.Write("Kategorija: ");
+        category = Console.ReadLine();
+        if (category == "plaća" || category == "honorar" || category == "poklon" || category == "hrana" || category == "prijevoz" || category == "sport") break;
+        Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
+    }
+    var keysToRemove = transactions
+        .Where(transaction => transaction.Value.Item4 == category && transaction.Value.Item1 == optionForId)
+        .Select(transaction => transaction.Key)
+        .ToList();
+    
+    RemoveTransactions(keysToRemove, optionForId);
+}
 
 void DeleteTransaction(int optionForId) {
     string[] options = { "Povratak\n", "Brisanje transakcije po id-u", "Brisanje ispod unesenog iznosa", "Brisanje iznad unesenog iznosa", "Brisanje svih prihoda", "Brisanje svih rashoda", "Brisanje svih transakcija za odabranu kategoriju" };
@@ -217,6 +298,9 @@ void DeleteTransaction(int optionForId) {
             DeleteIncomeTransactions(optionForId);
             break;
         case 5:
+            DeleteExpenseTransactions(optionForId);
+            break;
+        case 6:
             DeleteTransactionsOfSelectedCategory(optionForId);
             break;
     }
@@ -285,7 +369,7 @@ void Accounts(int optionForId)
             break;
         case 4:
             TransactionList(optionForId);
-            MainMenu();
+            Accounts(optionForId);
             break;
         case 5:
             FinancialReport();
