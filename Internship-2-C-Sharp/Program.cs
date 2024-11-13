@@ -3,22 +3,30 @@ using System.Numerics;
 using System.Transactions;
 using System.Xml.Linq;
 
-SortedDictionary<int, Tuple<string, string, int, DateTime>> users = new SortedDictionary<int, Tuple<string, string, int, DateTime>>();
-users.Add(1, new Tuple<string, string, int, DateTime>("Ante", "Antic", 800, new DateTime(2001, 5, 21)));
-users.Add(2, new Tuple<string, string, int, DateTime>("Mate", "Matic", -200, new DateTime(1980, 2, 1)));
-users.Add(3, new Tuple<string, string, int, DateTime>("Jure", "Juric", 190, new DateTime(1998, 12, 21)));
-users.Add(4, new Tuple<string, string, int, DateTime>("Ivo", "Ivic", 50, new DateTime(2000, 7, 6)));
+using System;
+using System.Collections.Generic;
 
+SortedDictionary<int, (Tuple<string, string, DateTime> userInfo, Tuple<int, int, int> accounts)> users =
+    new SortedDictionary<int, (Tuple<string, string, DateTime> userInfo, Tuple<int, int, int> accounts)>();
 
-SortedDictionary<int, Tuple<int, string, int, string, DateTime>> transactions = new SortedDictionary<int, Tuple<int, string, int, string, DateTime>>();
-transactions.Add(1, new Tuple<int, string, int, string, DateTime>(1, "prihod", 800, "plaća", DateTime.Now));
-transactions.Add(2, new Tuple<int, string, int, string, DateTime>(1, "rashod", 100, "sport", DateTime.Now));
-transactions.Add(3, new Tuple<int, string, int, string, DateTime>(2, "rashod", 100, "sport", DateTime.Now));
-transactions.Add(4, new Tuple<int, string, int, string, DateTime>(2, "rashod", 200, "hrana", DateTime.Now));
-transactions.Add(5, new Tuple<int, string, int, string, DateTime>(3, "prihod", 100, "poklon", DateTime.Now));
-transactions.Add(6, new Tuple<int, string, int, string, DateTime>(3, "rashod", 10, "prijevoz", DateTime.Now));
-transactions.Add(7, new Tuple<int, string, int, string, DateTime>(4, "prihod", 50, "honorar", DateTime.Now));
-transactions.Add(8, new Tuple<int, string, int, string, DateTime>(4, "rashod", 100, "hrana", DateTime.Now));
+users.Add(1, (new Tuple<string, string, DateTime>("Ante", "Antic", new DateTime(2001, 5, 21)),
+              new Tuple<int, int, int>(800, -100, -200)));
+
+users.Add(2, (new Tuple<string, string, DateTime>("Mate", "Matic", new DateTime(1980, 2, 1)),
+              new Tuple<int, int, int>(190, 50, -100)));
+
+SortedDictionary<int, Tuple<int, int, string, int, string, DateTime>> transactions =
+    new SortedDictionary<int, Tuple<int, int, string, int, string, DateTime>>();
+
+transactions.Add(1, new Tuple<int, int, string, int, string, DateTime>(1, 1, "prihod", 800, "plaća", DateTime.Now));
+transactions.Add(2, new Tuple<int, int, string, int, string, DateTime>(1, 1, "rashod", 100, "sport", DateTime.Now));
+transactions.Add(3, new Tuple<int, int, string, int, string, DateTime>(1, 2, "rashod", 100, "sport", DateTime.Now));
+transactions.Add(4, new Tuple<int, int, string, int, string, DateTime>(1, 3, "rashod", 200, "hrana", DateTime.Now));
+transactions.Add(5, new Tuple<int, int, string, int, string, DateTime>(2, 1, "prihod", 100, "poklon", DateTime.Now));
+transactions.Add(6, new Tuple<int, int, string, int, string, DateTime>(2, 1, "rashod", 10, "prijevoz", DateTime.Now));
+transactions.Add(7, new Tuple<int, int, string, int, string, DateTime>(2, 2, "prihod", 50, "honorar", DateTime.Now));
+transactions.Add(8, new Tuple<int, int, string, int, string, DateTime>(2, 3, "rashod", 100, "hrana", DateTime.Now));
+
 
 //components
 int Display(string[] options)
@@ -45,7 +53,8 @@ int Display(string[] options)
 
     return option;
 }
-void UserListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<string, string, int, DateTime>>> userList, string message)
+void UserListDisplayBody(IEnumerable<KeyValuePair<int, (Tuple<string, string, DateTime> userInfo,
+    Tuple<int, int, int> accounts)>> userList, string message)
 {
     if (userList.Any())
     {
@@ -53,26 +62,26 @@ void UserListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<string, string, int
         foreach (var user in userList)
         {
             int id = user.Key;
-            string name = user.Value.Item1;
-            string surname = user.Value.Item2;
-            DateTime birthDate = user.Value.Item4;
+            string name = user.Value.userInfo.Item1;
+            string surname = user.Value.userInfo.Item2;
+            DateTime birthDate = user.Value.userInfo.Item3;
 
             Console.WriteLine($"{id} - {name} - {surname} - {birthDate.ToString("dd.MM.yyyy")}");
         }
     }
     else Console.WriteLine(message);
 }
-void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, string, int, string, DateTime>>> transactionList, string message)
+void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, int, string, int, string, DateTime>>> transactionList, string message)
 {
     if (transactionList.Any())
     {
         Console.WriteLine("Id - Tip - Iznos - Kategorija - Datum");
         foreach (var transaction in transactionList)
         {
-            string type = transaction.Value.Item2;
-            int price = transaction.Value.Item3;
-            string category = transaction.Value.Item4;
-            DateTime transactionDate = transaction.Value.Item5;
+            string type = transaction.Value.Item3;
+            int price = transaction.Value.Item4;
+            string category = transaction.Value.Item5;
+            DateTime transactionDate = transaction.Value.Item6;
 
             Console.WriteLine($"{transaction.Key} - {type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
         }
@@ -174,48 +183,72 @@ void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, string,
 
     return (name, surname, birthDate);
 }
-void AccountValue(int optionForId)
+void AccountValue(int userId, int accountId, int amount)
 {
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId);
-    int balance = 100;
-    foreach (var transaction in userTransactions)
-    {
-        string type = transaction.Value.Item2;
-        int amount = transaction.Value.Item3;
+    var user = users[userId];
+    int accountBalance = 0;
 
-        if (type == "prihod")
-            balance += amount;
-        else if (type == "rashod")
-            balance -= amount;
+    if (accountId == 1) accountBalance = user.accounts.Item1;
+    else if (accountId == 2) accountBalance = user.accounts.Item2;
+    else if (accountId == 3) accountBalance = user.accounts.Item3;
+
+    accountBalance += amount;
+
+    if (accountId == 1)
+        users[userId] = (user.userInfo, new Tuple<int, int, int>(accountBalance, user.accounts.Item2, user.accounts.Item3));
+    else if (accountId == 2)
+        users[userId] = (user.userInfo, new Tuple<int, int, int>(user.accounts.Item1, accountBalance, user.accounts.Item3));
+    else if (accountId == 3)
+        users[userId] = (user.userInfo, new Tuple<int, int, int>(user.accounts.Item1, user.accounts.Item2, accountBalance));
+
+}
+void RemoveTransactions(List<int> keysToRemove, int userId, int accountId)
+{
+    var user = users[userId];
+    int accountBalance = 0;
+
+    if (accountId == 1) accountBalance = user.accounts.Item1;
+    else if (accountId == 2) accountBalance = user.accounts.Item2;
+    else if (accountId == 3) accountBalance = user.accounts.Item3;
+
+    foreach (var key in keysToRemove)
+    {
+        var transaction = transactions[key];
+        var transactionType = transaction.Item3;
+        var amount = transaction.Item4;
+
+        if (transactionType == "prihod") accountBalance -= amount;
+        else if (transactionType == "rashod") accountBalance += amount;
+
+        transactions.Remove(key);
     }
 
-    users[optionForId] = new Tuple<string, string, int, DateTime>(
-        users[optionForId].Item1,
-        users[optionForId].Item2,
-        balance,
-        users[optionForId].Item4
-    );
-}
-void RemoveTransactions(List<int> keysToRemove, int optionForId)
-{
-    foreach (var key in keysToRemove) transactions.Remove(key);
+    if (accountId == 1)
+        users[userId] = (user.userInfo, new Tuple<int, int, int>(accountBalance, user.accounts.Item2, user.accounts.Item3));
+    else if (accountId == 2)
+        users[userId] = (user.userInfo, new Tuple<int, int, int>(user.accounts.Item1, accountBalance, user.accounts.Item3));
+    else if (accountId == 3)
+        users[userId] = (user.userInfo, new Tuple<int, int, int>(user.accounts.Item1, user.accounts.Item2, accountBalance));
+
     Console.WriteLine($"Izbrisano {keysToRemove.Count} transakcija.");
-    Accounts(optionForId);
+    Accounts(userId);
 }
+
+
 //functions
-void AddTransaction(int optionForId)
+void AddTransaction(int userId, int accountId)
 {
     var (typeNum, amount, category) = TransactionBody();
     int newId = transactions.Keys.Count != 0 ? transactions.Keys.Max() + 1 : 1;
-    transactions.Add(newId, new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now));
-    AccountValue(optionForId);
-    Accounts(optionForId);
+    transactions.Add(newId, new Tuple<int, int, string, int, string, DateTime>(userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now));
+    AccountValue(userId, accountId, typeNum == "1" ? amount : -amount);
+    Accounts(userId);
 }
-void DeleteTransactionById(int optionForId)
+void DeleteTransactionById(int userId, int accountId)
 {
-    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    var userTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).ToList();
     TransactionListDisplayBody(userTransactions, "Nema transakcija.");
-    var userKeys = transactions.Where(transaction => transaction.Value.Item1 == optionForId)
+    var userKeys = transactions.Where(transaction => transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
     int option;
@@ -230,9 +263,9 @@ void DeleteTransactionById(int optionForId)
     }
     transactions.Remove(option);
     Console.WriteLine($"Izbrisana transakcije s id-om {option}.");
-    Accounts(optionForId);
+    Accounts(userId);
 }
-void DeleteTransactionsUnderCertainAmount(int optionForId)
+void DeleteTransactionsUnderCertainAmount(int userId, int accountId)
 {
     int amount;
     while (true)
@@ -242,13 +275,13 @@ void DeleteTransactionsUnderCertainAmount(int optionForId)
         Console.WriteLine("Iznos mora biti broj. Pokušajte ponovo.");
     }
     var keysToRemove = transactions
-        .Where(transaction => transaction.Value.Item3 < amount && transaction.Value.Item1 == optionForId)
+        .Where(transaction => transaction.Value.Item4 < amount && transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, optionForId);
+    RemoveTransactions(keysToRemove, userId, accountId);
 }
-void DeleteTransactionsAboveCertainAmount(int optionForId)
+void DeleteTransactionsAboveCertainAmount(int userId, int accountId)
 {
     int amount;
     while (true)
@@ -258,31 +291,31 @@ void DeleteTransactionsAboveCertainAmount(int optionForId)
         Console.WriteLine("Iznos mora biti broj. Pokušajte ponovo.");
     }
     var keysToRemove = transactions
-        .Where(transaction => transaction.Value.Item3 > amount && transaction.Value.Item1 == optionForId)
+        .Where(transaction => transaction.Value.Item4 > amount && transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, optionForId);
+    RemoveTransactions(keysToRemove, userId, accountId);
 }
-void DeleteIncomeTransactions(int optionForId)
+void DeleteIncomeTransactions(int userId, int accountId)
 {
     var keysToRemove = transactions
-        .Where(transaction => transaction.Value.Item2 == "prihod" && transaction.Value.Item1 == optionForId)
+        .Where(transaction => transaction.Value.Item3 == "prihod" && transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, optionForId);
+    RemoveTransactions(keysToRemove, userId, accountId);
 }
-void DeleteExpenseTransactions(int optionForId)
+void DeleteExpenseTransactions(int userId, int accountId)
 {
     var keysToRemove = transactions
-        .Where(transaction => transaction.Value.Item2 == "rashod" && transaction.Value.Item1 == optionForId)
+        .Where(transaction => transaction.Value.Item3 == "rashod" && transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, optionForId);
+    RemoveTransactions(keysToRemove, userId, accountId);
 }
-void DeleteTransactionsOfSelectedCategory(int optionForId)
+void DeleteTransactionsOfSelectedCategory(int userId, int accountId)
 {
     var category = "";
     while (true)
@@ -293,14 +326,14 @@ void DeleteTransactionsOfSelectedCategory(int optionForId)
         Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
     }
     var keysToRemove = transactions
-        .Where(transaction => transaction.Value.Item4 == category && transaction.Value.Item1 == optionForId)
+        .Where(transaction => transaction.Value.Item5 == category && transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, optionForId);
+    RemoveTransactions(keysToRemove, userId, accountId);
 }
 
-void DeleteTransaction(int optionForId)
+void DeleteTransaction(int userId, int accountId)
 {
     string[] options = { "Povratak\n", "Brisanje transakcije po id-u", "Brisanje ispod unesenog iznosa", "Brisanje iznad unesenog iznosa", "Brisanje svih prihoda", "Brisanje svih rashoda", "Brisanje svih transakcija za odabranu kategoriju" };
     int option = Display(options);
@@ -308,33 +341,33 @@ void DeleteTransaction(int optionForId)
     switch (option)
     {
         case 0:
-            Accounts(optionForId);
+            Accounts(userId);
             break;
         case 1:
-            DeleteTransactionById(optionForId);
+            DeleteTransactionById(userId, accountId);
             break;
         case 2:
-            DeleteTransactionsUnderCertainAmount(optionForId);
+            DeleteTransactionsUnderCertainAmount(userId, accountId);
             break;
         case 3:
-            DeleteTransactionsAboveCertainAmount(optionForId);
+            DeleteTransactionsAboveCertainAmount(userId, accountId);
             break;
         case 4:
-            DeleteIncomeTransactions(optionForId);
+            DeleteIncomeTransactions(userId, accountId);
             break;
         case 5:
-            DeleteExpenseTransactions(optionForId);
+            DeleteExpenseTransactions(userId, accountId);
             break;
         case 6:
-            DeleteTransactionsOfSelectedCategory(optionForId);
+            DeleteTransactionsOfSelectedCategory(userId, accountId);
             break;
     }
 }
-void UpdateTransaction(int optionForId)
+void UpdateTransaction(int userId, int accountId)
 {
-    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    var userTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).ToList();
     TransactionListDisplayBody(userTransactions, "Nema transakcija.");
-    var userKeys = transactions.Where(transaction => transaction.Value.Item1 == optionForId)
+    var userKeys = transactions.Where(transaction => transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
     int option;
@@ -347,51 +380,51 @@ void UpdateTransaction(int optionForId)
         if (userKeys.Contains(option)) break;
         else Console.WriteLine("\nTransakcija s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
     }
-
+    var oldAmount = transactions[option].Item4;
     var (typeNum, amount, category) = TransactionBody();
-    transactions[option] = new Tuple<int, string, int, string, DateTime>(optionForId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now);
+    transactions[option] = new Tuple<int, int, string, int, string, DateTime>(userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now);
     Console.WriteLine($"\nTransakcija s ID-om {option} izmijenjena.\n");
 
-    AccountValue(optionForId);
-    Accounts(optionForId);
+    AccountValue(userId, accountId, amount-oldAmount);
+    Accounts(userId);
 }
-void TransactionListAscendingAmount(int optionForId)
+void TransactionListAscendingAmount(int userId, int accountId)
 {
-    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderBy(transaction => transaction.Value.Item3).ToList();
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderBy(transaction => transaction.Value.Item4).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionListDescendingAmount(int optionForId)
+void TransactionListDescendingAmount(int userId, int accountId)
 {
-    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderByDescending(transaction => transaction.Value.Item3).ToList();
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderByDescending(transaction => transaction.Value.Item4).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionListAscendingDate(int optionForId)
+void TransactionListAscendingDate(int userId, int accountId)
 {
-    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderBy(transaction => transaction.Value.Item5).ToList();
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderBy(transaction => transaction.Value.Item6).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionListDescendingDate(int optionForId)
+void TransactionListDescendingDate(int userId, int accountId)
 {
-    var sortedTransactions = transactions.Where(x => x.Value.Item1 == optionForId).OrderByDescending(transaction => transaction.Value.Item5).ToList();
+    var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderByDescending(transaction => transaction.Value.Item6).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionListIncome(int optionForId)
+void TransactionListIncome(int userId, int accountId)
 {
-    var foundTransactions = transactions.Where(x => x.Value.Item1 == optionForId && x.Value.Item2 == "prihod").ToList();
+    var foundTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId && x.Value.Item3 == "prihod").ToList();
     TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionListExpense(int optionForId)
+void TransactionListExpense(int userId, int accountId)
 {
-    var foundTransactions = transactions.Where(x => x.Value.Item1 == optionForId && x.Value.Item2 == "rashod").ToList();
+    var foundTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId && x.Value.Item3 == "rashod").ToList();
     TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionListByCategory(int optionForId)
+void TransactionListByCategory(int userId, int accountId)
 {
     var category = "";
     while (true)
@@ -402,77 +435,68 @@ void TransactionListByCategory(int optionForId)
             category == "hrana" || category == "prijevoz" || category == "sport") break;
         Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
     }
-    var foundTransactions = transactions.Where(x => x.Value.Item1 == optionForId && x.Value.Item4 == category).ToList();
+    var foundTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId && x.Value.Item5 == category).ToList();
     TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
 
-void TransactionListRegular(int optionForId)
+void TransactionListRegular(int userId, int accountId)
 {
-    var userTransactions = transactions.Where(x => x.Value.Item1 == optionForId).ToList();
+    var userTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).ToList();
     TransactionListDisplayBody(userTransactions, "Nema transakcija.");
-    TransactionList(optionForId);
+    TransactionList(userId, accountId);
 }
-void TransactionList(int optionForId)
+void TransactionList(int userId, int accountId)
 {
-    string[] options = { "Povratak u glavni izbornik\n", "Sve transakcije", 
-        "Sve transakcije sortirane po iznosu uzlazno", "Sve transakcije sortirane po iznosu silazno", 
-        "Sve transakcije sortirane po datumu uzlazno", "Sve transakcije sortirane po datumu silazno", 
+    string[] options = { "Povratak u glavni izbornik\n", "Sve transakcije",
+        "Sve transakcije sortirane po iznosu uzlazno", "Sve transakcije sortirane po iznosu silazno",
+        "Sve transakcije sortirane po datumu uzlazno", "Sve transakcije sortirane po datumu silazno",
         "Svi prihodi", "Svi rashodi", "Sve transakcije za odabranu kategoriju" };
     int option = Display(options);
 
     switch (option)
     {
         case 0:
-            Accounts(optionForId);
+            Accounts(userId);
             break;
         case 1:
-            TransactionListRegular(optionForId);
+            TransactionListRegular(userId, accountId);
             break;
         case 2:
-            TransactionListAscendingAmount(optionForId);
+            TransactionListAscendingAmount(userId, accountId);
             break;
         case 3:
-            TransactionListDescendingAmount(optionForId);
+            TransactionListDescendingAmount(userId, accountId);
             break;
         case 4:
-            TransactionListAscendingDate(optionForId);
+            TransactionListAscendingDate(userId, accountId);
             break;
         case 5:
-            TransactionListDescendingDate(optionForId);
+            TransactionListDescendingDate(userId, accountId);
             break;
         case 6:
-            TransactionListIncome(optionForId);
+            TransactionListIncome(userId, accountId);
             break;
         case 7:
-            TransactionListExpense(optionForId);
+            TransactionListExpense(userId, accountId);
             break;
         case 8:
-            TransactionListByCategory(optionForId);
+            TransactionListByCategory(userId, accountId);
             break;
     }
 }
-void CurrentAccountBalance(int optionForId) {
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId);
-    int balance = 100;
-    foreach (var transaction in userTransactions)
-    {
-        string type = transaction.Value.Item2;
-        int amount = transaction.Value.Item3;
 
-        if (type == "prihod")
-            balance += amount;
-        else if (type == "rashod")
-            balance -= amount;
-    }
-    Console.WriteLine($"Trenutno stanje računa: {balance} eura");
-}
-void TransactionsCount(int optionForId) 
+void CurrentAccountBalance(int userId)
 {
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId).ToList();
+    var sum = users[userId].accounts.Item1 + users[userId].accounts.Item2 + users[userId].accounts.Item3;
+    Console.WriteLine($"Trenutno stanje računa: {sum} eura");
+}
+void TransactionsCount(int userId)
+{
+    var userTransactions = transactions.Where(t => t.Value.Item1 == userId).ToList();
     Console.WriteLine($"Ukupan broj transakcija: {userTransactions.Count}");
 }
-void IncomeAndExpensesForChosenPeriod(int optionForId)
+void IncomeAndExpensesForChosenPeriod(int userId)
 {
     int month;
     int year;
@@ -495,14 +519,14 @@ void IncomeAndExpensesForChosenPeriod(int optionForId)
         }
         break;
     }
-    
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId && t.Value.Item5.Month == month && t.Value.Item5.Year == year);
+
+    var userTransactions = transactions.Where(t => t.Value.Item1 == userId && t.Value.Item6.Month == month && t.Value.Item6.Year == year);
     if (userTransactions.Any())
     {
         foreach (var transaction in userTransactions)
         {
-            string type = transaction.Value.Item2;
-            int amount = transaction.Value.Item3;
+            string type = transaction.Value.Item3;
+            int amount = transaction.Value.Item4;
 
             if (type == "prihod")
                 income += amount;
@@ -514,7 +538,8 @@ void IncomeAndExpensesForChosenPeriod(int optionForId)
     }
     else Console.WriteLine($"Nema transakcija u {month}. mjesecu i {year}. godini.");
 }
-void PercentageExpenseForChosenCategory(int optionForId) {
+void PercentageExpenseForChosenCategory(int userId)
+{
     var category = "";
     var chosenIncome = 0;
     var income = 0;
@@ -525,13 +550,13 @@ void PercentageExpenseForChosenCategory(int optionForId) {
         if (category == "hrana" || category == "prijevoz" || category == "sport") break;
         Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
     }
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId && t.Value.Item2 == "rashod");
+    var userTransactions = transactions.Where(t => t.Value.Item1 == userId && t.Value.Item3 == "rashod");
     if (userTransactions.Any())
     {
         foreach (var transaction in userTransactions)
         {
-            int amount = transaction.Value.Item3;
-            if (transaction.Value.Item4 == category)
+            int amount = transaction.Value.Item4;
+            if (transaction.Value.Item5 == category)
                 chosenIncome += amount;
             income += amount;
         }
@@ -539,7 +564,8 @@ void PercentageExpenseForChosenCategory(int optionForId) {
     }
     else Console.WriteLine($"Nema transakcija s kategorijom {category}.");
 }
-void AverageBalanceTransactionForChosenPeriod(int optionForId) {
+void AverageBalanceTransactionForChosenPeriod(int userId)
+{
     int month;
     int year;
     var balance = 0;
@@ -561,13 +587,13 @@ void AverageBalanceTransactionForChosenPeriod(int optionForId) {
         break;
     }
 
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId && t.Value.Item5.Month == month && t.Value.Item5.Year == year);
+    var userTransactions = transactions.Where(t => t.Value.Item1 == userId && t.Value.Item6.Month == month && t.Value.Item6.Year == year);
     if (userTransactions.Any())
     {
         foreach (var transaction in userTransactions)
         {
-            string type = transaction.Value.Item2;
-            int amount = transaction.Value.Item3;
+            string type = transaction.Value.Item3;
+            int amount = transaction.Value.Item4;
 
             if (type == "prihod")
                 balance += amount;
@@ -579,7 +605,8 @@ void AverageBalanceTransactionForChosenPeriod(int optionForId) {
     }
     else Console.WriteLine($"Nema transakcija u {month}. mjesecu i {year}. godini.");
 }
-void AverageBalanceTransactionForChosenCategory(int optionForId) {
+void AverageBalanceTransactionForChosenCategory(int userId)
+{
     var category = "";
     var balance = 0;
     while (true)
@@ -589,13 +616,13 @@ void AverageBalanceTransactionForChosenCategory(int optionForId) {
         if (category == "plaća" || category == "honorar" || category == "poklon" || category == "hrana" || category == "prijevoz" || category == "sport") break;
         Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
     }
-    var userTransactions = transactions.Where(t => t.Value.Item1 == optionForId && t.Value.Item4 == category);
+    var userTransactions = transactions.Where(t => t.Value.Item1 == userId && t.Value.Item5 == category);
     if (userTransactions.Any())
     {
         foreach (var transaction in userTransactions)
         {
-            string type = transaction.Value.Item2;
-            int amount = transaction.Value.Item3;
+            string type = transaction.Value.Item3;
+            int amount = transaction.Value.Item4;
 
             if (type == "prihod")
                 balance += amount;
@@ -608,7 +635,7 @@ void AverageBalanceTransactionForChosenCategory(int optionForId) {
     else Console.WriteLine($"Nema transakcija s kategorijom {category}.");
 }
 
-void FinancialReport(int optionForId)
+void FinancialReport(int userId)
 {
     string[] options = { "Povratak\n", "Trenutno stanje računa", "Ukupan broj transakcija",
         "Ukupan iznos prihoda i rashoda za odabrani mjesec i godinu", "Postotak udjela rashoda za odabranu kategoriju",
@@ -618,32 +645,33 @@ void FinancialReport(int optionForId)
     switch (option)
     {
         case 0:
-            Accounts(optionForId);
+            Accounts(userId);
             break;
         case 1:
-            CurrentAccountBalance(optionForId);
+            CurrentAccountBalance(userId);
             break;
         case 2:
-            TransactionsCount(optionForId);
+            TransactionsCount(userId);
             break;
         case 3:
-            IncomeAndExpensesForChosenPeriod(optionForId);
+            IncomeAndExpensesForChosenPeriod(userId);
             break;
         case 4:
-            PercentageExpenseForChosenCategory(optionForId);
+            PercentageExpenseForChosenCategory(userId);
             break;
         case 5:
-            AverageBalanceTransactionForChosenPeriod(optionForId);
+            AverageBalanceTransactionForChosenPeriod(userId);
             break;
         case 6:
-            AverageBalanceTransactionForChosenCategory(optionForId);
+            AverageBalanceTransactionForChosenCategory(userId);
             break;
     }
 }
 
-void Accounts(int optionForId)
+void Transactions(int userId, int accountId)
 {
-    string[] options = { "Povratak u glavni izbornik\n", "Unos nove transakcije", "Brisanje transakcije", "Uređivanje transakcije", "Pregled transakcija", "Financijsko izvješće" };
+    string[] options = { "Povratak u glavni izbornik\n", "Unos nove transakcije", "Brisanje transakcije",
+        "Uređivanje transakcije", "Pregled transakcija" };
     int option = Display(options);
 
     switch (option)
@@ -652,39 +680,62 @@ void Accounts(int optionForId)
             MainMenu();
             break;
         case 1:
-            AddTransaction(optionForId);
+            AddTransaction(userId, accountId);
             break;
         case 2:
-            DeleteTransaction(optionForId);
+            DeleteTransaction(userId, accountId);
             break;
         case 3:
-            UpdateTransaction(optionForId);
+            UpdateTransaction(userId, accountId);
             break;
         case 4:
-            TransactionList(optionForId);
-            break;
-        case 5:
-            FinancialReport(optionForId);
-            Accounts(optionForId);
+            TransactionList(userId, accountId);
             break;
     }
 }
 
+void Accounts(int userId)
+{
+    string[] options = { "Povratak u glavni izbornik\n", "Tekući", "Žiro", "Prepaid", "Financijsko izvješće" };
+    int option = Display(options);
+
+    switch (option)
+    {
+        case 0:
+            MainMenu();
+            break;
+        case 1:
+            Transactions(userId, option);
+            break;
+        case 2:
+            Transactions(userId, option);
+            break;
+        case 3:
+            Transactions(userId, option);
+            break;
+        case 4:
+            FinancialReport(userId);
+            Accounts(userId);
+            break;
+    }
+}
 void UserListBySurname()
 {
-    var sortedUsers = users.OrderBy(user => user.Value.Item2).ToList();
+    var sortedUsers = users.OrderBy(user => user.Value.userInfo.Item2).ToList();
     UserListDisplayBody(sortedUsers, "Nema korisnika.");
 }
 
 void UserListByAge()
 {
-    var usersOver30 = users.Where(user => (DateTime.Now.Year - user.Value.Item4.Year) > 30);
+    var usersOver30 = users.Where(user => (DateTime.Now.Year - user.Value.userInfo.Item3.Year) > 30).ToList();
     UserListDisplayBody(usersOver30, "Nema korisnika starijih od 30.");
 }
 
 void UserListWithNegativeAccount()
 {
-    var usersWithNegativeAccount = users.Where(user => user.Value.Item3 < 0);
+    var usersWithNegativeAccount = users
+        .Where(user => user.Value.accounts.Item1 < 0 || user.Value.accounts.Item2 < 0 || user.Value.accounts.Item3 < 0)
+        .ToList();
     UserListDisplayBody(usersWithNegativeAccount, "Nema korisnika sa negativnim računom.");
 }
 
@@ -724,8 +775,8 @@ void UpdateUser()
     }
 
     var (name, surname, birthDate) = UserBody();
-    var account = users[option].Item3;
-    users[option] = new Tuple<string, string, int, DateTime>(name, surname, account, birthDate);
+    var currentAccounts = users[option].accounts;
+    users[option] = (new Tuple<string, string, DateTime>(name, surname, birthDate), currentAccounts);
     Console.WriteLine($"\nKorisnik s ID-om {option} izmijenjen.\n");
     MainMenu();
 }
@@ -759,7 +810,9 @@ void DeleteUserByFirstnameAndLastname()
     Console.Write("Unesi prezime korisnika kojeg želiš izbrisati: ");
     var surname = Console.ReadLine();
 
-    var usersToDelete = users.Where(u => u.Value.Item1 == name && u.Value.Item2 == surname).ToList();
+    var usersToDelete = users
+        .Where(u => u.Value.userInfo.Item1 == name && u.Value.userInfo.Item2 == surname)
+        .ToList();
 
     if (usersToDelete.Count == 0) Console.WriteLine("Korisnik s tim imenom i prezimenom nije pronađen.");
     else
@@ -796,13 +849,15 @@ void AddUser()
 {
     var (name, surname, birthDate) = UserBody();
     int newId = users.Keys.Count != 0 ? users.Keys.Max() + 1 : 1;
-    users.Add(newId, new Tuple<string, string, int, DateTime>(name, surname, 100, birthDate));
+    users.Add(newId, (new Tuple<string, string, DateTime>(name, surname, birthDate),
+                      new Tuple<int, int, int>(100, 0, 0)));
     Console.WriteLine($"\nKorisnik {name} {surname} dodan s id-om {newId}.\n");
     MainMenu();
 }
 void Users()
 {
-    string[] options = { "Povratak u glavni izbornik\n", "Unos novog korisnika", "Brisanje korisnika", "Uređivanje korisnika", "Pregled izbornika" };
+    string[] options = { "Povratak u glavni izbornik\n", "Unos novog korisnika", "Brisanje korisnika", 
+        "Uređivanje korisnika", "Pregled korisnika" };
     int option = Display(options);
 
     switch (option)
