@@ -5,6 +5,8 @@ using System.Xml.Linq;
 
 using System;
 using System.Collections.Generic;
+using static System.Net.Mime.MediaTypeNames;
+using Microsoft.VisualBasic.FileIO;
 
 SortedDictionary<int, (Tuple<string, string, DateTime> userInfo, Tuple<int, int, int> accounts)> users =
     new SortedDictionary<int, (Tuple<string, string, DateTime> userInfo, Tuple<int, int, int> accounts)>();
@@ -15,20 +17,34 @@ users.Add(1, (new Tuple<string, string, DateTime>("Ante", "Antic", new DateTime(
 users.Add(2, (new Tuple<string, string, DateTime>("Mate", "Matic", new DateTime(1980, 2, 1)),
               new Tuple<int, int, int>(190, 50, -100)));
 
-SortedDictionary<int, Tuple<int, int, string, int, string, DateTime>> transactions =
-    new SortedDictionary<int, Tuple<int, int, string, int, string, DateTime>>();
+SortedDictionary<int, Tuple<int, int, string, int, string, DateTime, string>> transactions =
+    new SortedDictionary<int, Tuple<int, int, string, int, string, DateTime, string>>();
 
-transactions.Add(1, new Tuple<int, int, string, int, string, DateTime>(1, 1, "prihod", 800, "plaća", DateTime.Now));
-transactions.Add(2, new Tuple<int, int, string, int, string, DateTime>(1, 1, "rashod", 100, "sport", DateTime.Now));
-transactions.Add(3, new Tuple<int, int, string, int, string, DateTime>(1, 2, "rashod", 100, "sport", DateTime.Now));
-transactions.Add(4, new Tuple<int, int, string, int, string, DateTime>(1, 3, "rashod", 200, "hrana", DateTime.Now));
-transactions.Add(5, new Tuple<int, int, string, int, string, DateTime>(2, 1, "prihod", 100, "poklon", DateTime.Now));
-transactions.Add(6, new Tuple<int, int, string, int, string, DateTime>(2, 1, "rashod", 10, "prijevoz", DateTime.Now));
-transactions.Add(7, new Tuple<int, int, string, int, string, DateTime>(2, 2, "prihod", 50, "honorar", DateTime.Now));
-transactions.Add(8, new Tuple<int, int, string, int, string, DateTime>(2, 3, "rashod", 100, "hrana", DateTime.Now));
+transactions.Add(1, new Tuple<int, int, string, int, string, DateTime, string>(1, 1, "prihod", 800, "plaća",
+    new DateTime(2023, 4, 21), "Posao"));
+transactions.Add(2, new Tuple<int, int, string, int, string, DateTime, string>(1, 1, "rashod", 100, "sport",
+    DateTime.Now, "Članarina"));
+transactions.Add(3, new Tuple<int, int, string, int, string, DateTime, string>(1, 2, "rashod", 100, "sport",
+    new DateTime(2024, 5, 11), "Članarina"));
+transactions.Add(4, new Tuple<int, int, string, int, string, DateTime, string>(1, 3, "rashod", 200, "hrana",
+    new DateTime(2024, 1, 1), "Konzum"));
+transactions.Add(5, new Tuple<int, int, string, int, string, DateTime, string>(2, 1, "prihod", 100, "poklon",
+    new DateTime(2024, 6, 20), "standardna transakcija"));
+transactions.Add(6, new Tuple<int, int, string, int, string, DateTime, string>(2, 1, "rashod", 10, "prijevoz",
+    DateTime.Now, "Gorivo"));
+transactions.Add(7, new Tuple<int, int, string, int, string, DateTime, string>(2, 2, "prihod", 50, "honorar",
+    new DateTime(2024, 7, 2), "standardna transakcija"));
+transactions.Add(8, new Tuple<int, int, string, int, string, DateTime, string>(2, 3, "rashod", 100, "hrana",
+    new DateTime(2024, 5, 25), "Lidl"));
 
 
 //components
+void BackButton()
+{
+    Console.Write("\nPritisni bilo koju tipku za povratak nazad...");
+    Console.ReadKey();
+    Console.Clear();
+}
 int Display(string[] options)
 {
     int option;
@@ -71,82 +87,28 @@ void UserListDisplayBody(IEnumerable<KeyValuePair<int, (Tuple<string, string, Da
     }
     else Console.WriteLine(message);
 }
-void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, int, string, int, string, DateTime>>> transactionList, string message)
+void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, int, string, int, string, DateTime, string>>> transactionList, string message)
 {
     if (transactionList.Any())
     {
-        Console.WriteLine("Id - Tip - Iznos - Kategorija - Datum");
+        Console.WriteLine("Id - Tip - Iznos - Kategorija - Opis - Datum");
         foreach (var transaction in transactionList)
         {
             string type = transaction.Value.Item3;
             int price = transaction.Value.Item4;
             string category = transaction.Value.Item5;
+            string summary = transaction.Value.Item7;
             DateTime transactionDate = transaction.Value.Item6;
 
-            Console.WriteLine($"{transaction.Key} - {type} - {price} - {category} - {transactionDate.ToString("dd.MM.yyyy")}");
+            Console.WriteLine($"{transaction.Key} - {type} - {price} - {category} - {summary} - {transactionDate.ToString("dd.MM.yyyy")}");
         }
     }
     else Console.WriteLine(message);
 }
-(string, int, string) TransactionBody()
+DateTime DateTimeBody()
 {
-    var typeNum = "";
-    int amount;
-    var category = "";
-
-    while (true)
-    {
-        Console.Write("Pritisni 1 za prihod ili 2 za rashod: ");
-        typeNum = Console.ReadLine();
-        if (typeNum == "1" || typeNum == "2") break;
-        Console.WriteLine("Niste pritisnuli 1 za prihod ili 2 za rashod. Pokušajte ponovo.");
-    }
-
-    while (true)
-    {
-        Console.Write("Iznos: ");
-        var amountInput = Console.ReadLine();
-        if (int.TryParse(amountInput, out amount) && amount > 0) break;
-        Console.WriteLine("Iznos mora biti pozitivan broj. Pokušajte ponovo.");
-    }
-
-    while (true)
-    {
-        Console.Write("Kategorija: ");
-        category = Console.ReadLine();
-        if (typeNum == "1" && (category == "plaća" || category == "honorar" || category == "poklon") ||
-            typeNum == "2" && (category == "hrana" || category == "prijevoz" || category == "sport")) break;
-        Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
-    }
-
-    return (typeNum, amount, category);
-}
-
-(string, string, DateTime) UserBody()
-{
-    var name = "";
-    var surname = "";
-    int day;
-    int month;
-    int year;
+    int day, month, year;
     DateTime birthDate;
-
-    while (true)
-    {
-        Console.Write("Ime: ");
-        name = Console.ReadLine();
-        if (name != "") break;
-        Console.WriteLine("Ime ne može biti prazno. Pokušajte ponovo.");
-    }
-
-    while (true)
-    {
-        Console.Write("Prezime: ");
-        surname = Console.ReadLine();
-        if (surname != "") break;
-        Console.WriteLine("Prezime ne može biti prazno. Pokušajte ponovo.");
-    }
-
     while (true)
     {
         Console.Write("Dan: ");
@@ -180,6 +142,82 @@ void TransactionListDisplayBody(IEnumerable<KeyValuePair<int, Tuple<int, int, st
             Console.WriteLine("Nevažeći datum. Pokušajte ponovo.");
         }
     }
+    return birthDate;
+}
+(string, int, string, DateTime, string) TransactionBody()
+{
+    var typeNum = "";
+    var option = "";
+    int amount;
+    var category = "";
+    var summary = "standarna transakcija";
+    DateTime dateTime = DateTime.Now;
+
+    while (true)
+    {
+        Console.Write("Pritisni 1 za prihod ili 2 za rashod: ");
+        typeNum = Console.ReadLine();
+        if (typeNum == "1" || typeNum == "2") break;
+        Console.WriteLine("Niste pritisnuli 1 za prihod ili 2 za rashod. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Iznos: ");
+        var amountInput = Console.ReadLine();
+        if (int.TryParse(amountInput, out amount) && amount > 0) break;
+        Console.WriteLine("Iznos mora biti pozitivan broj. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Kategorija: ");
+        category = Console.ReadLine();
+        if (typeNum == "1" && (category == "plaća" || category == "honorar" || category == "poklon") ||
+            typeNum == "2" && (category == "hrana" || category == "prijevoz" || category == "sport")) break;
+        Console.WriteLine("Kategorija ne postoji. Pokušajte ponovo.");
+    }
+
+    Console.Write("Opis: ");
+    var text = Console.ReadLine();
+    if (text != "") summary = text;
+
+    while (true)
+    {
+        Console.Write("Pritisni 1 za postavljanje transakcije na današnji dan ili 2 za postavljanje transakcije na određeni datum: ");
+        option = Console.ReadLine();
+        if (option == "1" || option == "2") break;
+        Console.WriteLine("Niste pritisnuli 1 ili 2. Pokušajte ponovo.");
+    }
+
+    if (option == "2") dateTime = DateTimeBody();
+
+    return (typeNum, amount, category, dateTime, summary);
+}
+
+(string, string, DateTime) UserBody()
+{
+    var name = "";
+    var surname = "";
+    DateTime birthDate;
+
+    while (true)
+    {
+        Console.Write("Ime: ");
+        name = Console.ReadLine();
+        if (name != "") break;
+        Console.WriteLine("Ime ne može biti prazno. Pokušajte ponovo.");
+    }
+
+    while (true)
+    {
+        Console.Write("Prezime: ");
+        surname = Console.ReadLine();
+        if (surname != "") break;
+        Console.WriteLine("Prezime ne može biti prazno. Pokušajte ponovo.");
+    }
+    Console.WriteLine("Datum rođenja");
+    birthDate = DateTimeBody();
 
     return (name, surname, birthDate);
 }
@@ -234,14 +272,38 @@ void RemoveTransactions(List<int> keysToRemove, int userId, int accountId)
     Accounts(userId);
 }
 
+void RemoveTransactionsDialog(List<int> keysToRemove, int userId, int accountId)
+{
+    var dialog = "";
+    while (true)
+    {
+        Console.Write($"\nIzbrisati {keysToRemove.Count} transakcije (y za da ili n za ne)? ");
+        dialog = Console.ReadLine();
+
+        if (dialog == "y")
+        {
+            Console.Clear();
+            RemoveTransactions(keysToRemove, userId, accountId);
+            break;
+        }
+        else if (dialog == "n")
+        {
+            Console.Clear();
+            break;
+        }
+        else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.\n");
+    }
+}
 
 //functions
 void AddTransaction(int userId, int accountId)
 {
-    var (typeNum, amount, category) = TransactionBody();
+    var (typeNum, amount, category, dateTime, summary) = TransactionBody();
     int newId = transactions.Keys.Count != 0 ? transactions.Keys.Max() + 1 : 1;
-    transactions.Add(newId, new Tuple<int, int, string, int, string, DateTime>(userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now));
+    transactions.Add(newId, new Tuple<int, int, string, int, string, DateTime, string>(userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, dateTime, summary));
     AccountValue(userId, accountId, typeNum == "1" ? amount : -amount);
+    Console.Clear();
+    Console.WriteLine("Transakcija dodana.\n");
     Accounts(userId);
 }
 void DeleteTransactionById(int userId, int accountId)
@@ -251,6 +313,7 @@ void DeleteTransactionById(int userId, int accountId)
     var userKeys = transactions.Where(transaction => transaction.Value.Item1 == userId && transaction.Value.Item2 == accountId)
         .Select(transaction => transaction.Key)
         .ToList();
+    var dialog = "";
     int option;
 
     while (true)
@@ -261,8 +324,25 @@ void DeleteTransactionById(int userId, int accountId)
         if (userKeys.Contains(option)) break;
         else Console.WriteLine("\nTransakcija s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
     }
-    transactions.Remove(option);
-    Console.WriteLine($"Izbrisana transakcije s id-om {option}.");
+    while (true)
+    {
+        Console.Write($"\nIzbrisati transakciju s id-om {option} (y za da ili n za ne)? ");
+        dialog = Console.ReadLine();
+
+        if (dialog == "y")
+        {
+            transactions.Remove(option);
+            Console.Clear();
+            Console.WriteLine($"Izbrisana transakcije s id-om {option}.");
+            break;
+        }
+        else if (dialog == "n")
+        {
+            Console.Clear();
+            break;
+        }
+        else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.\n");
+    }
     Accounts(userId);
 }
 void DeleteTransactionsUnderCertainAmount(int userId, int accountId)
@@ -279,7 +359,7 @@ void DeleteTransactionsUnderCertainAmount(int userId, int accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, userId, accountId);
+    RemoveTransactionsDialog(keysToRemove, userId, accountId);
 }
 void DeleteTransactionsAboveCertainAmount(int userId, int accountId)
 {
@@ -295,7 +375,7 @@ void DeleteTransactionsAboveCertainAmount(int userId, int accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, userId, accountId);
+    RemoveTransactionsDialog(keysToRemove, userId, accountId);
 }
 void DeleteIncomeTransactions(int userId, int accountId)
 {
@@ -304,7 +384,7 @@ void DeleteIncomeTransactions(int userId, int accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, userId, accountId);
+    RemoveTransactionsDialog(keysToRemove, userId, accountId);
 }
 void DeleteExpenseTransactions(int userId, int accountId)
 {
@@ -313,7 +393,7 @@ void DeleteExpenseTransactions(int userId, int accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, userId, accountId);
+    RemoveTransactionsDialog(keysToRemove, userId, accountId);
 }
 void DeleteTransactionsOfSelectedCategory(int userId, int accountId)
 {
@@ -330,7 +410,7 @@ void DeleteTransactionsOfSelectedCategory(int userId, int accountId)
         .Select(transaction => transaction.Key)
         .ToList();
 
-    RemoveTransactions(keysToRemove, userId, accountId);
+    RemoveTransactionsDialog(keysToRemove, userId, accountId);
 }
 
 void DeleteTransaction(int userId, int accountId)
@@ -371,6 +451,7 @@ void UpdateTransaction(int userId, int accountId)
         .Select(transaction => transaction.Key)
         .ToList();
     int option;
+    var dialog = "";
 
     while (true)
     {
@@ -381,48 +462,60 @@ void UpdateTransaction(int userId, int accountId)
         else Console.WriteLine("\nTransakcija s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
     }
     var oldAmount = transactions[option].Item4;
-    var (typeNum, amount, category) = TransactionBody();
-    transactions[option] = new Tuple<int, int, string, int, string, DateTime>(userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, DateTime.Now);
-    Console.WriteLine($"\nTransakcija s ID-om {option} izmijenjena.\n");
+    var (typeNum, amount, category, dateTime, summary) = TransactionBody();
+    while (true)
+    {
+        Console.Write($"\nAžurirati transakciju s id-om {option} (y za da ili n za ne)? ");
+        dialog = Console.ReadLine();
 
-    AccountValue(userId, accountId, amount-oldAmount);
+        if (dialog == "y")
+        {
+            transactions[option] = new Tuple<int, int, string, int, string, DateTime, string>
+                (userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, dateTime, summary);
+            Console.Clear();
+            Console.WriteLine($"\nTransakcija s ID-om {option} izmijenjena.\n");
+            AccountValue(userId, accountId, amount - oldAmount);
+            break;
+        }
+        else if (dialog == "n") 
+        { 
+            Console.Clear(); 
+            break; 
+        }
+        else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.\n");
+    }
+
     Accounts(userId);
 }
 void TransactionListAscendingAmount(int userId, int accountId)
 {
     var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderBy(transaction => transaction.Value.Item4).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionListDescendingAmount(int userId, int accountId)
 {
     var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderByDescending(transaction => transaction.Value.Item4).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionListAscendingDate(int userId, int accountId)
 {
     var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderBy(transaction => transaction.Value.Item6).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionListDescendingDate(int userId, int accountId)
 {
     var sortedTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).OrderByDescending(transaction => transaction.Value.Item6).ToList();
     TransactionListDisplayBody(sortedTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionListIncome(int userId, int accountId)
 {
     var foundTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId && x.Value.Item3 == "prihod").ToList();
     TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionListExpense(int userId, int accountId)
 {
     var foundTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId && x.Value.Item3 == "rashod").ToList();
     TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionListByCategory(int userId, int accountId)
 {
@@ -437,18 +530,16 @@ void TransactionListByCategory(int userId, int accountId)
     }
     var foundTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId && x.Value.Item5 == category).ToList();
     TransactionListDisplayBody(foundTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 
 void TransactionListRegular(int userId, int accountId)
 {
     var userTransactions = transactions.Where(x => x.Value.Item1 == userId && x.Value.Item2 == accountId).ToList();
     TransactionListDisplayBody(userTransactions, "Nema transakcija.");
-    TransactionList(userId, accountId);
 }
 void TransactionList(int userId, int accountId)
 {
-    string[] options = { "Povratak u glavni izbornik\n", "Sve transakcije",
+    string[] options = { "Povratak\n", "Sve transakcije",
         "Sve transakcije sortirane po iznosu uzlazno", "Sve transakcije sortirane po iznosu silazno",
         "Sve transakcije sortirane po datumu uzlazno", "Sve transakcije sortirane po datumu silazno",
         "Svi prihodi", "Svi rashodi", "Sve transakcije za odabranu kategoriju" };
@@ -483,6 +574,12 @@ void TransactionList(int userId, int accountId)
         case 8:
             TransactionListByCategory(userId, accountId);
             break;
+    }
+
+    if (option > 0 && option < 9)
+    {
+        BackButton();
+        TransactionList(userId, accountId);
     }
 }
 
@@ -666,18 +763,24 @@ void FinancialReport(int userId)
             AverageBalanceTransactionForChosenCategory(userId);
             break;
     }
+
+    if (option > 0 && option < 7)
+    {
+        BackButton();
+        FinancialReport(userId);
+    }
 }
 
 void Transactions(int userId, int accountId)
 {
-    string[] options = { "Povratak u glavni izbornik\n", "Unos nove transakcije", "Brisanje transakcije",
+    string[] options = { "Povratak\n", "Unos nove transakcije", "Brisanje transakcije",
         "Uređivanje transakcije", "Pregled transakcija" };
     int option = Display(options);
 
     switch (option)
     {
         case 0:
-            MainMenu();
+            Accounts(userId);
             break;
         case 1:
             AddTransaction(userId, accountId);
@@ -715,7 +818,6 @@ void Accounts(int userId)
             break;
         case 4:
             FinancialReport(userId);
-            Accounts(userId);
             break;
     }
 }
@@ -759,12 +861,19 @@ void UserList()
             UserListWithNegativeAccount();
             break;
     }
+
+    if (option > 0 && option < 4)
+    {
+        BackButton();
+        Users();
+    }
 }
 
 void UpdateUser()
 {
     UserListBySurname();
     int option;
+    var dialog = "";
     while (true)
     {
         Console.Write("\nUpiši id korisnika kojeg želiš izmijeniti: ");
@@ -773,11 +882,27 @@ void UpdateUser()
         if (users.ContainsKey(option)) break;
         else Console.WriteLine("\nKorisnik s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
     }
-
     var (name, surname, birthDate) = UserBody();
     var currentAccounts = users[option].accounts;
-    users[option] = (new Tuple<string, string, DateTime>(name, surname, birthDate), currentAccounts);
-    Console.WriteLine($"\nKorisnik s ID-om {option} izmijenjen.\n");
+    while (true)
+    {
+        Console.Write($"\nAžurirati korisnika s id-om {option} (y za da ili n za ne)? ");
+        dialog = Console.ReadLine();
+
+        if (dialog == "y")
+        {
+            users[option] = (new Tuple<string, string, DateTime>(name, surname, birthDate), currentAccounts);
+            Console.Clear();
+            Console.WriteLine($"Korisnik s ID-om {option} izmijenjen.\n");
+            break;
+        }
+        else if (dialog == "n")
+        {
+            Console.Clear();
+            break;
+        }
+        else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.");
+    }
     MainMenu();
 }
 
@@ -785,20 +910,34 @@ void DeleteUserById()
 {
     UserListBySurname();
     int option;
-    do
+    var dialog = "";
+    while (true)
     {
         Console.Write("\nUpiši id korisnika kojeg želiš izbrisati: ");
         int.TryParse(Console.ReadLine(), out option);
 
-        if (!users.ContainsKey(option))
+        if (users.ContainsKey(option)) break;
+        else Console.WriteLine("\nKorisnik s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
+    }
+    while (true)
+    {
+        Console.Write($"\nIzbrisati korisnika s id-om {option} (y za da ili n za ne)? ");
+        dialog = Console.ReadLine();
+
+        if (dialog == "y")
         {
-            Console.WriteLine("\nKorisnik s tim id-om ne postoji. Molimo pokušajte ponovo.\n");
-            continue;
+            users.Remove(option);
+            Console.Clear();
+            Console.WriteLine($"Korisnik s ID-om {option} izbrisan.\n");
+            break;
         }
-        users.Remove(option);
-        Console.WriteLine($"\nKorisnik s ID-om {option} izbrisan.\n");
-        break;
-    } while (true);
+        else if (dialog == "n")
+        {
+            Console.Clear();
+            break;
+        }
+        else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.");
+    }
     MainMenu();
 }
 
@@ -809,21 +948,43 @@ void DeleteUserByFirstnameAndLastname()
     var name = Console.ReadLine();
     Console.Write("Unesi prezime korisnika kojeg želiš izbrisati: ");
     var surname = Console.ReadLine();
+    var dialog = "";
 
     var usersToDelete = users
         .Where(u => u.Value.userInfo.Item1 == name && u.Value.userInfo.Item2 == surname)
         .ToList();
 
-    if (usersToDelete.Count == 0) Console.WriteLine("Korisnik s tim imenom i prezimenom nije pronađen.");
+    if (usersToDelete.Count == 0)
+    {
+        Console.Clear(); 
+        Console.WriteLine("Korisnik s tim imenom i prezimenom nije pronađen.\n");
+    }
     else
     {
-        foreach (var user in usersToDelete)
+        while (true)
         {
-            users.Remove(user.Key);
-            Console.WriteLine($"Korisnik {user.Value.Item1} {user.Value.Item2} s ID-om {user.Key} izbrisan.");
-        }
-    }
+            Console.Write($"\nIzbrisati {usersToDelete.Count} korisnika (y za da ili n za ne)? ");
+            dialog = Console.ReadLine();
 
+            if (dialog == "y")
+            {
+                Console.Clear();
+                foreach (var user in usersToDelete)
+                {
+                    users.Remove(user.Key);
+                    Console.WriteLine($"Korisnik {name} {surname} izbrisan.");
+                }
+                break;
+            }
+            else if (dialog == "n")
+            {
+                Console.Clear();
+                break;
+            }
+            else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.");
+        }
+
+    }
     MainMenu();
 }
 
@@ -851,12 +1012,13 @@ void AddUser()
     int newId = users.Keys.Count != 0 ? users.Keys.Max() + 1 : 1;
     users.Add(newId, (new Tuple<string, string, DateTime>(name, surname, birthDate),
                       new Tuple<int, int, int>(100, 0, 0)));
-    Console.WriteLine($"\nKorisnik {name} {surname} dodan s id-om {newId}.\n");
+    Console.Clear();
+    Console.WriteLine($"Korisnik {name} {surname} dodan s id-om {newId}.\n");
     MainMenu();
 }
 void Users()
 {
-    string[] options = { "Povratak u glavni izbornik\n", "Unos novog korisnika", "Brisanje korisnika", 
+    string[] options = { "Povratak u glavni izbornik\n", "Unos novog korisnika", "Brisanje korisnika",
         "Uređivanje korisnika", "Pregled korisnika" };
     int option = Display(options);
 
@@ -876,7 +1038,6 @@ void Users()
             break;
         case 4:
             UserList();
-            MainMenu();
             break;
     }
 }
