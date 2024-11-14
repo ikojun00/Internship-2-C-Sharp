@@ -271,7 +271,7 @@ void RemoveTransactions(List<int> keysToRemove, int userId, int accountId)
         users[userId] = (user.userInfo, new Tuple<int, int, int>(user.accounts.Item1, user.accounts.Item2, accountBalance));
 
     Console.WriteLine($"Izbrisano {keysToRemove.Count} transakcija.");
-    Accounts(userId);
+    Transactions(userId, accountId);
 }
 
 void RemoveTransactionsDialog(List<int> keysToRemove, int userId, int accountId)
@@ -320,7 +320,7 @@ void DeleteTransactionById(int userId, int accountId)
 
     while (true)
     {
-        Console.Write("\nUpiši id transakcije koje želiš izmijeniti: ");
+        Console.Write("\nUpiši id transakcije koje želiš izbrisati: ");
         int.TryParse(Console.ReadLine(), out option);
 
         if (userKeys.Contains(option)) break;
@@ -345,7 +345,7 @@ void DeleteTransactionById(int userId, int accountId)
         }
         else Console.WriteLine("\nNiste upisali y ili n. Molimo pokušajte ponovo.\n");
     }
-    Accounts(userId);
+    Transactions(userId, accountId);
 }
 void DeleteTransactionsUnderCertainAmount(int userId, int accountId)
 {
@@ -476,7 +476,7 @@ void UpdateTransaction(int userId, int accountId)
             transactions[option] = new Tuple<int, int, string, int, string, DateTime, string>
                 (userId, accountId, typeNum == "1" ? "prihod" : "rashod", amount, category, dateTime, summary);
             Console.Clear();
-            Console.WriteLine($"\nTransakcija s ID-om {option} izmijenjena.\n");
+            Console.WriteLine($"Transakcija s ID-om {option} izmijenjena.\n");
             AccountValue(userId, accountId, amount - oldAmount);
             break;
         }
